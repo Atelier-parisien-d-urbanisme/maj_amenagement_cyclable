@@ -7,14 +7,14 @@ import numpy as np
 import requests,zipfile
 from io import BytesIO
 
-# Ce script permet de mettre à jour la base de données cyclable sur IDF provenant de iles de france mobilités...
+# Ce script permet de mettre à jour la base de données cyclable IDF provenant de Iles-de-France Mobilités...
 
 # Nom et chemin du dossier et de la nouvelle *.gdb :
 chemin_dossier = r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires'
-nom_dossier = 'MAJ_AMENAGEMENT_CYCLABLE_04_23'
-nom_gdb = "MAJ_AMENAGEMENT_CYCLABLE_04_23.gdb"
+nom_dossier = 'MAJ_AMENAGEMENT_CYCLABLE_04_23' # Nom du dossier
+nom_gdb = "MAJ_AMENAGEMENT_CYCLABLE_04_23.gdb" # Nom de la *.gdb
 
-# Nom url :
+# Lien url provenant d'IDFM :
 url = "https://data.iledefrance-mobilites.fr/api/datasets/1.0/amenagements-velo-en-ile-de-france/attachments/amenagements_velo_en_ile_de_france_2023_04_zip/" # lien vers la bdd
 
 date = 2023 # date de mise à jour de la bdd
