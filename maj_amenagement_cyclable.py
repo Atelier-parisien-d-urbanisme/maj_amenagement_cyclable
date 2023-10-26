@@ -7,7 +7,7 @@ import numpy as np
 import requests,zipfile
 from io import BytesIO
 
-# Ce script permet de mettre à jour la base de données cyclable sur paris provenant de iles de france mobilités... 
+# Ce script permet de mettre à jour la base de données cyclable sur paris provenant de iles de france mobilités...
 
 # Nom et chemin du dossier et de la nouvelle *.gdb :
 chemin_dossier = r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires'
