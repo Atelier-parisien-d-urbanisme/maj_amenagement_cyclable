@@ -7,8 +7,8 @@ import numpy as np
 
 # Nom et chemin du dossier et de la nouvelle *.gdb :
 cheminDossier = r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires'
-nomDossier = 'STATS_AMENAGEMENT_CYCLABLE_NQPV'
-nomGdb = "STATS_AMENAGEMENT_CYCLABLE_NQPV.gdb"
+nomDossier = 'STATS_AMENAGEMENT_CYCLABLE_NQPV_02_24'
+nomGdb = "STATS_AMENAGEMENT_CYCLABLE_NQPV_02_24.gdb"
 
 # Noms des variables :
 pisteCyclable = "amenagement_cyclable"
@@ -18,9 +18,9 @@ nqpv = "secteurNqpv"
 listeNomShp = [pisteCyclable,commune,nqpv]
 
 # Localisation des shapefiles d'entrees :
-listeCheminsShp = [r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.cyclable\apur.diffusion.amenagement_cyclable',
+listeCheminsShp = [r'P:\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires\MAJ_AMENAGEMENT_CYCLABLE_02_24\MAJ_AMENAGEMENT_CYCLABLE_02_24.gdb\amenagement_cyclable_2024',
 r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.limite_administrative\apur.diffusion.commune',
-r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.perimetre_politique_ville\apur.diffusion.secteur_nqpv']
+r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.perimetre_politique_ville\apur.diffusion.geographie_prioritaire_2024']
 
 ### CREATION D'UNE GDB ET IMPORT DES DONNEES ###
 def creationWorkspace(cheminDossier,nomDossier,nomGdb,listeNomShp,listeCheminsShp):
@@ -46,7 +46,7 @@ chemin = arcpy.env.workspace = cheminDossier + "\\" + nomDossier + "\\" + nomGdb
 arcpy.env.overwriteOutput = True # Attention permet d'écraser fichier du même nom
 
 ### TRAITEMENT STATISTIQUE DE LA BDD CYCLABLE DANS LES NQPV ###
-def calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv):
+def calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv,champ):
 
     arcpy.AddMessage("Selections de l'ensemble pistes cyclables...")
     arcpy.MakeFeatureLayer_management(pisteCyclable, "pisteCyclable_lyr")
@@ -57,7 +57,7 @@ def calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv):
     arcpy.analysis.Identity("pisteCyclable_sel_simple", nqpv, "amenagement_cyclable_nqpv", "ONLY_FID", None, "NO_RELATIONSHIPS")
     
     arcpy.AddMessage("Récupération des nature de secteur par jointure...")
-    arcpy.management.JoinField("amenagement_cyclable_nqpv", "FID_secteurNqpv", nqpv, "objectid", "c_nat_qpv", "NOT_USE_FM", None)
+    arcpy.management.JoinField("amenagement_cyclable_nqpv", "FID_secteurNqpv", nqpv, "objectid", champ, "NOT_USE_FM", None)
    
     arcpy.AddMessage("Récupération des identitées des communes...")
     arcpy.analysis.Identity("amenagement_cyclable_nqpv", commune, "amenagement_cyclable_nqpv_commune", "ONLY_FID", None, "NO_RELATIONSHIPS")
@@ -65,12 +65,12 @@ def calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv):
     arcpy.AddMessage("Récupération des noms des communes par jointure...")
     arcpy.management.JoinField("amenagement_cyclable_nqpv_commune", "FID_commune", commune, "objectid", "l_co", "NOT_USE_FM", None)
     
-    arcpy.AddMessage("Fusion sur l_co, c_nat_qpv et somme des distances des tronçcons...")
-    arcpy.management.Dissolve("amenagement_cyclable_nqpv_commune", "amenagement_cyclable_nqpv_commune_diss", "l_co;c_nat_qpv", "shape_Length SUM", "MULTI_PART", "DISSOLVE_LINES", '')
+    arcpy.AddMessage("Fusion sur l_co, c_type_pgp et somme des distances des tronçcons...")
+    arcpy.management.Dissolve("amenagement_cyclable_nqpv_commune", "amenagement_cyclable_nqpv_commune_diss", f"l_co;{champ}", "shape_Length SUM", "MULTI_PART", "DISSOLVE_LINES", '')
     
     arcpy.AddMessage("Selections des NQPV sur Paris...")
     arcpy.MakeFeatureLayer_management("amenagement_cyclable_nqpv_commune_diss", "amenagement_cyclable_nqpv_commune_diss_lyr")
-    arcpy.management.SelectLayerByAttribute("amenagement_cyclable_nqpv_commune_diss_lyr", "NEW_SELECTION", "c_nat_qpv IS NOT NULL And l_co = 'Paris'", None)
+    arcpy.management.SelectLayerByAttribute("amenagement_cyclable_nqpv_commune_diss_lyr", "NEW_SELECTION", f"{champ} IS NOT NULL And l_co = 'Paris'", None)
     arcpy.CopyFeatures_management("amenagement_cyclable_nqpv_commune_diss_lyr","stats_amenagement_cyclable_nqpv_paris")
     
     arcpy.AddMessage("Fusion sur les communes afin d'avoir distance total...")
@@ -87,9 +87,9 @@ def calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv):
     
     arcpy.AddMessage("Traitement statistique de la base de données cyclable terminée...")
 
-calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv)
+calculStatistiqueCyclableSimpleNqpv(pisteCyclable,commune,nqpv,champ = 'c_type_pgp')
 
-def calculStatistiqueCyclableDoubleNqpv(pisteCyclable,commune,nqpv):
+def calculStatistiqueCyclableDoubleNqpv(pisteCyclable,commune,nqpv,champ):
 
     arcpy.AddMessage("Selections des pistes cyclables double sens...")
     arcpy.MakeFeatureLayer_management(pisteCyclable, "pisteCyclable_lyr")
@@ -100,20 +100,20 @@ def calculStatistiqueCyclableDoubleNqpv(pisteCyclable,commune,nqpv):
     arcpy.analysis.Identity("pisteCyclable_sel_double", nqpv, "amenagement_cyclable_nqpv_double", "ONLY_FID", None, "NO_RELATIONSHIPS")
     
     arcpy.AddMessage("Récupération des nature de secteur par jointure...")
-    arcpy.management.JoinField("amenagement_cyclable_nqpv_double", "FID_secteurNqpv", nqpv, "objectid", "c_nat_qpv", "NOT_USE_FM", None)
+    arcpy.management.JoinField("amenagement_cyclable_nqpv_double", "FID_secteurNqpv", nqpv, "objectid", champ, "NOT_USE_FM", None)
    
     arcpy.AddMessage("Récupération des identitées des communes...")
     arcpy.analysis.Identity("amenagement_cyclable_nqpv_double", commune, "amenagement_cyclable_nqpv_double_commune", "ONLY_FID", None, "NO_RELATIONSHIPS")
-    
+  
     arcpy.AddMessage("Récupération des noms des communes par jointure...")
     arcpy.management.JoinField("amenagement_cyclable_nqpv_double_commune", "FID_commune", commune, "objectid", "l_co", "NOT_USE_FM", None)
     
-    arcpy.AddMessage("Fusion sur l_co, c_nat_qpv et somme des distances des tronçcons...")
-    arcpy.management.Dissolve("amenagement_cyclable_nqpv_double_commune", "amenagement_cyclable_nqpv_double_commune_diss", "l_co;c_nat_qpv", "shape_Length SUM", "MULTI_PART", "DISSOLVE_LINES", '')
+    arcpy.AddMessage("Fusion sur l_co, c_type_pgp et somme des distances des tronçcons...")
+    arcpy.management.Dissolve("amenagement_cyclable_nqpv_double_commune", "amenagement_cyclable_nqpv_double_commune_diss", f"l_co;{champ}", "shape_Length SUM", "MULTI_PART", "DISSOLVE_LINES", '')
     
     arcpy.AddMessage("Selections des NQPV sur Paris...")
     arcpy.MakeFeatureLayer_management("amenagement_cyclable_nqpv_double_commune_diss", "amenagement_cyclable_nqpv_double_commune_diss_lyr")
-    arcpy.management.SelectLayerByAttribute("amenagement_cyclable_nqpv_double_commune_diss_lyr", "NEW_SELECTION", "c_nat_qpv IS NOT NULL And l_co = 'Paris'", None)
+    arcpy.management.SelectLayerByAttribute("amenagement_cyclable_nqpv_double_commune_diss_lyr", "NEW_SELECTION", f"{champ} IS NOT NULL And l_co = 'Paris'", None)
     arcpy.CopyFeatures_management("amenagement_cyclable_nqpv_double_commune_diss_lyr","stats_amenagement_cyclable_nqpv_double_paris")
     
     arcpy.AddMessage("Fusion sur les communes afin d'avoir distance total...")
@@ -130,9 +130,25 @@ def calculStatistiqueCyclableDoubleNqpv(pisteCyclable,commune,nqpv):
     
     arcpy.AddMessage("Traitement statistique de la base de données cyclable terminée...")
 
-calculStatistiqueCyclableDoubleNqpv(pisteCyclable,commune,nqpv)
+calculStatistiqueCyclableDoubleNqpv(pisteCyclable,commune,nqpv,champ = 'c_type_pgp')
 
 
 arcpy.CopyFeatures_management("stats_amenagement_cyclable_nqpv_double_paris","stats_amenagement_cyclable_nqpv_ds_paris")
 arcpy.management.Append("stats_amenagement_cyclable_nqpv_paris", "stats_amenagement_cyclable_nqpv_ds_paris", "TEST", None, '', '')
-arcpy.management.Dissolve("stats_amenagement_cyclable_nqpv_ds_paris", "stats_amenagement_cyclable_nqpv_ds_paris_diss", "c_nat_qpv;l_co", "dist_nqpv_cycl SUM", "MULTI_PART", "DISSOLVE_LINES", '')
+arcpy.management.Dissolve("stats_amenagement_cyclable_nqpv_ds_paris", "stats_amenagement_cyclable_nqpv_ds_paris_diss", ";l_co", "dist_nqpv_cycl SUM", "MULTI_PART", "DISSOLVE_LINES", '')
+
+
+
+
+
+# arcpy.AddMessage("Selections commune Paris...")
+# arcpy.MakeFeatureLayer_management(commune, "commune_lyr")
+# arcpy.management.SelectLayerByAttribute("commune_lyr", "NEW_SELECTION", "l_co = 'Paris'", None)
+# arcpy.CopyFeatures_management("commune_lyr","paris")
+
+# arcpy.analysis.Intersect(
+# in_features="amenagement_cyclable_nqpv_double #;paris #",
+# out_feature_class="amenagement_cyclable_nqpv_double_commune",
+# join_attributes="ALL",
+# cluster_tolerance=None,
+# output_type="INPUT")
