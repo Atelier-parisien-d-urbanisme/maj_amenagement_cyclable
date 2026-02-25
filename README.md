@@ -20,7 +20,7 @@ La couche qui est traité reprend les différents champs dans la base de donnée
 Ces champs sont construits à partir des champs présents dans les données BNAC: ame_d, ame_g, regime_d, regime_g, sens_d et sens_g d.
 
 
-2) Le script Python maj_amenagement_cyclable_bnac.py permet de mettre à jour la base de données des aménagements cyclables d’Île-de-France (IDF) à partir des données provenant d'Iles-de-France Mobilités (IDFM).
+2) Le script Python maj_amenagement_cyclable_idfm.py permet de mettre à jour la base de données des aménagements cyclables d’Île-de-France (IDF) à partir des données provenant d'Iles-de-France Mobilités (IDFM).
 Les données sources proviennent du portail data.iledefrance-mobilites.fr, jeu de données : Aménagements vélo en Île-de-France.
 
 Le script automatise :
