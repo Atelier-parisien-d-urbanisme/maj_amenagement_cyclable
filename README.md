@@ -33,8 +33,8 @@ Le script automatise :
 Les différents champs sont référencées ici : https://geocatalogue.apur.org/catalogue/srv/fre/catalog.search#/metadata/a9c76257-46f0-44a3-a6e6-ac70eb7c7892
 
 🎯 c_acniv1 – Classification détaillée
-Code	Type d’aménagement
-- 10	Piste cyclable unidirectionnelle
+ - Code	Type d’aménagement
+ - 10	Piste cyclable unidirectionnelle
  - 11	Piste bidirectionnelle
  - 12	Bande bidirectionnelle
  - 13	Bande unidirectionnelle
@@ -46,6 +46,6 @@ Code	Type d’aménagement
  - 20	Voie verte
 
 🎯 c_acniv2 – Classification simplifiée
-Code	Type d’aménagement
+ - Code	Type d’aménagement
  - 1	Aménagement sécurisé
  - 2	Aménagement partagé
