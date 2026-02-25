@@ -54,5 +54,5 @@ Les différents champs sont référencées ici : https://geocatalogue.apur.org/c
 
 🎯 c_acniv2 – Classification simplifiée
  - Code	Type d’aménagement
- - 1	Aménagement sécurisé
- - 2	Aménagement partagé
+ - 1	 Pistes cyclables structurantes
+ - 2	 Autres aménagements cyclables
