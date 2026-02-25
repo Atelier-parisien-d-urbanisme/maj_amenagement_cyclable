@@ -13,7 +13,7 @@ Le script automatise :
  - 🔄 La conversion et projection des données
  - ✂ Le découpage à l’échelle IDF
  - 🧹 La normalisation des champs
- - 🧮 La catégorisation des aménagements (niveaux APUR)
+ - 🧮 La catégorisation des aménagements (niveaux APUR / c_acniv1, c_acniv2)
  - 📊 Produit des statistiques territoriales (MGP, EPCI)
 
 La couche qui est traité reprend les différents champs dans la base de données BNAC. Y est ajouté les champs suivants :
@@ -31,7 +31,7 @@ Le script automatise :
  - 🗂️ Crée un workspace (dossier + File Geodatabase)
  - 🔄 Convertit les données en Feature Class
  - 🧹 Réorganise les champs
- - 🧠 Recalcule la classification cyclable APUR (c_acniv1, c_acniv2)
+ - 🧠 Recalcule la classification cyclable APUR (niveaux APUR / c_acniv1, c_acniv2)
  - 🔍 Compare ancienne et nouvelle base
  - 📊 Produit des statistiques territoriales (MGP, EPCI, zones d’accessibilité vélo)
 
