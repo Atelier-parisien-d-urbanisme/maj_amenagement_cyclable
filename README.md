@@ -4,6 +4,7 @@ Ce projet contient deux script python :
 
 1) Le script Python maj_amenagement_cyclable_bnac.py permet de mettre à jour la base de données des aménagements cyclables d’Île-de-France (IDF) à partir des données nationales issues de la Base Nationale des Aménagements Cyclables (BNAC).
 Les données sources proviennent du portail data.gouv.fr, jeu de données : Aménagements cyclables France Métropolitaine.
+
 Le script automatise :
  - 📥 Le téléchargement des données BNAC (GeoJSON)
  - 🗂 La création d’un workspace (.gdb)
@@ -21,6 +22,7 @@ Ces champs sont construits à partir des champs présents dans les données BNAC
 
 2) Le script Python maj_amenagement_cyclable_bnac.py permet de mettre à jour la base de données des aménagements cyclables d’Île-de-France (IDF) à partir des données provenant d'Iles-de-France Mobilités (IDFM).
 Les données sources proviennent du portail data.iledefrance-mobilites.fr, jeu de données : Aménagements vélo en Île-de-France.
+
 Le script automatise :
  - 📥 Télécharge le GeoJSON IDFM
  - 🗂️ Crée un workspace (dossier + File Geodatabase)
