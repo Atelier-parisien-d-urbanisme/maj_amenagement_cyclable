@@ -6,36 +6,45 @@ import arcpy
 
 # Ce script permet de mettre à jour la base de données des aménagemenrs cyclables d'IDF à partir des données provenant de la BNAC...
 # Documentaion des champs des données BNAC: https://schema.data.gouv.fr/etalab/schema-amenagements-cyclables/0.3.5/documentation.html
+# Lien vers les nouvelles données Aménagements cyclables France Métropolitaine: https://www.data.gouv.fr/datasets/amenagements-cyclables-france-metropolitaine
 
-# Nom et chemin du dossier et de la nouvelle *.gdb :
+# --------------------------------------------------------------------------------------------------------
+# 🔧 0 -  PARAMETRES ET LIENS
+# --------------------------------------------------------------------------------------------------------
+# 🔹 Date de la mise à jour format AAAA_MM_JJ ⚠️ Date à modifier
+date = "2026_01_12" 
+
+# 🔹 Nom et chemin du dossier et de la nouvelle *.gdb :
 chemin_dossier = r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires'
-nom_dossier = 'MAJ_AMENAGEMENT_CYCLABLE_08_25' # Nom du dossier
-nom_gdb = "MAJ_AMENAGEMENT_CYCLABLE_08_25.gdb" # Nom de la *.gdb
+nom_dossier = f"MAJ_AMENAGEMENT_CYCLABLE_BNAC_{date}" # Nom du dossier
+nom_gdb = f"MAJ_AMENAGEMENT_CYCLABLE_BNAC_{date}.gdb" # Nom de la *.gdb
 
-# Lien url provenant d'IDFM
-lien = "https://www.data.gouv.fr/api/1/datasets/r/78e20654-f1f9-4075-94eb-ec5287ad4c30"
+# 🔹 Lien url des données BNAC provenant de data.gouv ⚠️ Lien à modifier
+# lien = "https://www.data.gouv.fr/api/1/datasets/r/78e20654-f1f9-4075-94eb-ec5287ad4c30"
+lien = "https://static.data.gouv.fr/resources/amenagements-cyclables-france-metropolitaine/20260112-134637/france-20260112.geojson"
 
-# date de mise à jour de la bdd
-date = 2025_08_01 
-
-# Noms des variables :
+# 🔹 Noms des variables :
 piste_cyclable_sde = "amenagement_cyclable_sde"
 commune = "commmune"
 epci = "epci"
+mgp = 'mgp'
 
-liste_nom_couche = [piste_cyclable_sde,commune,epci]
+liste_nom_couche = [piste_cyclable_sde, commune, epci, mgp]
 
-# Localisation des shapefiles d'entrees :
+# 🔹 Localisation des shapefiles d'entrees :
 liste_chemin_couche = [r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\diffusion.sde\apur.diffusion.cyclable\apur.diffusion.amenagement_cyclable',
 r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\diffusion.sde\apur.diffusion.limite_administrative\apur.diffusion.commune',
-r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.limite_administrative\apur.diffusion.epci']
+r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.limite_administrative\apur.diffusion.epci',
+r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.limite_administrative\apur.diffusion.mgp']
 
-chemin_gdb = arcpy.env.workspace = chemin_dossier + "\\" + nom_dossier + "\\" + nom_gdb # Localisation du workspace
-chemin_dossier_gdb = arcpy.env.workspace = chemin_dossier + "\\" + nom_dossier 
+chemin_gdb = chemin_dossier + "\\" + nom_dossier + "\\" + nom_gdb # Localisation du workspace
+chemin_dossier_gdb = chemin_dossier + "\\" + nom_dossier 
 arcpy.env.overwriteOutput = True # Attention permet d'écraser fichier du même nom
 
-###---------------------------------------------------------------------------------------------------------------------------------------------###
-
+# --------------------------------------------------------------------------------------------------------
+# 🔧 1 -  FONCTIONS DE TRAITEMENTS
+# --------------------------------------------------------------------------------------------------------
+# 🔹 Fonction créant un dossier et une *.gdb ou les données sont importées
 def creation_workspace(chemin_dossier, nom_dossier, nom_gdb, liste_nom_couche, liste_chemin_couche):
     arcpy.env.overwriteOutput = True
     
@@ -58,8 +67,9 @@ def creation_workspace(chemin_dossier, nom_dossier, nom_gdb, liste_nom_couche, l
         # Utiliser FeatureClassToFeatureClass pour shapefile → GDB
         arcpy.FeatureClassToFeatureClass_conversion(chemin, gdb_path, noms)
 
-    arcpy.AddMessage("Fin de copie des données dans la nouvelle *.gdb...")
+    arcpy.AddMessage("Fin de copie des données dans la nouvelle *.gdb...\n")
 
+# 🔹 Fonction d'import et conversion des données BNAC
 def import_geojson(lien, chemin_dossier_gdb, chemin_gdb, date):
     arcpy.AddMessage("Lancement de la mise à jour de la base de données cyclable...")
 
@@ -83,7 +93,8 @@ def import_geojson(lien, chemin_dossier_gdb, chemin_gdb, date):
     else:
         arcpy.AddError(f"Erreur lors du téléchargement : {response.status_code}")
 
-def projection_decoupage_couche(input,epci,date):
+# 🔹 Fonction de projection et découpage des données BNAC
+def projection_decoupage_couche(input, epci, date):
 
     arcpy.AddMessage("Projection des nouvelles données cyclables...")
     arcpy.management.Project(
@@ -115,13 +126,18 @@ def projection_decoupage_couche(input,epci,date):
         cluster_tolerance=None,
         output_type="INPUT")
 
+    arcpy.AddMessage("Projection des nouvelles données cyclables terminée...\n")
+
+# 🔹 Fonction de projection d'organisation des données BNAC
 def orgnisation_champs(input):
     
     arcpy.AddMessage("Réorganisation des champs...")
 
+    # Copie de la couche
     amenagement_cyclable = "amenagement_cyclable"
     arcpy.CopyFeatures_management(input,"amenagement_cyclable")
     
+    # Renommer les champs
     arcpy.AlterField_management(amenagement_cyclable,"id_osm","id_osm","ID de l'objet dans OSM")
     arcpy.AlterField_management(amenagement_cyclable,"ame_d","ame_d","Aménagement cyclable côté droit")
     arcpy.AlterField_management(amenagement_cyclable,"ame_g","ame_g","Aménagement cyclable côté gauche")
@@ -146,13 +162,15 @@ def orgnisation_champs(input):
     arcpy.AlterField_management(amenagement_cyclable,"date_maj","date_maj","Date de dernière mise à jour")
     # arcpy.AlterField_management(amenagement_cyclable,"reseau_loc","reseau_loc","Type de réseau structurant local")
 
+    # Garder les champs clefs
     arcpy.management.DeleteField(
     in_table=amenagement_cyclable,
-    drop_field="id_osm;code_com_d;ame_d;regime_d;sens_d;statut_d;revet_d;code_com_g;ame_g;regime_g;sens_g;statut_g;revet_g;access_ame;date_maj;trafic_vit;lumiere;local_d;local_g;largeur_d;largeur_g;d_service;c_acniv1;c_acniv2",
+    drop_field="id_osm;code_com_d;ame_d;regime_d;sens_d;statut_d;revet_d;code_com_g;ame_g;regime_g;sens_g;statut_g;revet_g;access_ame;date_maj;trafic_vit;lumiere;local_d;local_g;largeur_d;largeur_g;d_service",
     method="KEEP_FIELDS")
 
-    arcpy.AddMessage("Réorganisation des champs terminée...")
+    arcpy.AddMessage("Réorganisation des champs terminée...\n")
 
+# 🔹 Fonction de catégorisation des données BNAC
 def categorisation_cyclable_c_acniv1_2(input):
 
     arcpy.AddMessage("Caclul sur le champ c_acniv1 à partir des champs ame_d, ame_g, sens_d et sens_g...")
@@ -166,7 +184,8 @@ def categorisation_cyclable_c_acniv1_2(input):
 
     arcpy.AddMessage("Asignation du domaine c_acniv1...")
     arcpy.AssignDomainToField_management(input, "c_acniv1", "c_acniv1")
-        
+
+    arcpy.AddMessage("Calcul sur le champ c_acniv1 (Aménagement cyclable niveau 1)...")        
     codeblock = """
 
 def updateField(ame_d, ame_g, regime_d, regime_g, sens_d, sens_g):
@@ -282,7 +301,7 @@ def updateField(ame_d, ame_g, regime_d, regime_g, sens_d, sens_g):
 
     arcpy.CalculateField_management(input,"c_acniv1","updateField(!ame_d!, !ame_g!, !regime_d!, !regime_g!, !sens_d!, !sens_g!)","PYTHON3",codeblock)
 
-    arcpy.AddMessage("Calcul sur le champ c_acniv2...")
+    arcpy.AddMessage("Calcul sur le champ c_acniv2 (Aménagement cyclable niveau 2)...")
     codeblock ="""
 liste_1 = ['10','11','20']
 liste_2 = ['12','13','14','17','18']
@@ -295,269 +314,155 @@ def updateField(c_acniv1):
         return None """
     arcpy.CalculateField_management(input,"c_acniv2","updateField(!c_acniv1!)","PYTHON3",codeblock)
 
-    arcpy.AddMessage("Catégorisation terminée des champs c_acniv1 et c_acniv2...")
+    arcpy.AddMessage("Catégorisation terminée des champs c_acniv1 et c_acniv2...\n")
 
-def stats_cyclable_mgp_epci(input,date):
+# 🔹 Fonction de renommer les champs
+def renommer_champs_amenagements(table):
+    mapping = {
+        "F10": "piste_cyclable_uni",
+        "F11": "piste_cyclable_bi",
+        "F12": "bande_cyclable_bi",
+        "F13": "bande_cyclable_uni",
+        "F14": "bande_cyclable_bus_partagee",
+        "F15": "double_sens_bus_partage",
+        "F16": "double_sens_cyclable",
+        "F17": "bus_partage_uni",
+        "F18": "bus_partage_bi",
+        "F19": "amenagement_partage_autre",
+        "F20": "voie_verte"
+    }
 
-    arcpy.AddMessage("Import couche mgp, epci et accès vélo...")
+    champs_existants = [f.name for f in arcpy.ListFields(table)]
 
-    mgp_chemin = r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.limite_administrative\apur.diffusion.mgp'
-    epci_chemin = r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\utilisateur.sde\apur.diffusion.limite_administrative\apur.diffusion.epci'
+    for champ, nouveau_nom in mapping.items():
+        if champ in champs_existants:
+            arcpy.management.AlterField(
+                in_table=table,
+                field=champ,
+                new_field_name=nouveau_nom,
+                new_field_alias=nouveau_nom.replace("_", " ").title()
+            )
+            arcpy.AddMessage(f"Champ {champ} renommé en {nouveau_nom}")
+        else:
+            arcpy.AddWarning(f"Champ {champ} absent de la table {table}")
 
-    arcpy.conversion.FeatureClassToFeatureClass(mgp_chemin, chemin_gdb, "mgp")
+# 🔹 Fonction de remplacement des nulls par 0 sur les champs
+def remplacer_null(table, prefixe):
 
-   
-    arcpy.env.workspace = chemin_gdb
+    arcpy.AddMessage("Remplacement des NULL...")
 
-    def remplacer_null(table,prefixe):
+    fields = [f.name for f in arcpy.ListFields(table) if f.name.startswith(prefixe)]
 
-        # Récupérer tous les champs de la table
-        fields = [f.name for f in arcpy.ListFields(table) if f.name.startswith(prefixe)]
-
-        # Remplacer les NULL par 0 pour chaque champ
-        for field in fields:
-            expression = "Reclass(!{}!)".format(field)
-            code_block = """
+    for field in fields:
+        expression = "Reclass(!{}!)".format(field)
+        code_block = """
 def Reclass(val):
     if val is None:
         return 0
     return val
 """
-            arcpy.management.CalculateField(table, field, expression, "PYTHON3", code_block)
+        arcpy.management.CalculateField(
+            table,
+            field,
+            expression,
+            "PYTHON3",
+            code_block
+        )
 
-        print("Remplacement des NULL terminé !")
+        arcpy.AddMessage(f"NULL remplacés par 0 dans le champ {field}")
 
+    arcpy.AddMessage("Remplacement des NULL terminé...")
 
-    arcpy.AddMessage("Statistique cyclable mgp...")
+# 🔹 Fonction de calcul des statistiques métriques des amènagements cyclables
+def stats_cyclable_mgp_epci(input, date, chemin_gdb, zone):
 
+    arcpy.AddMessage(f"Statistique cyclable à l'échelle de la {zone}...")
+   
+    arcpy.env.workspace = chemin_gdb
+
+    # Intersection/découpage des données avec la couche de la mgp
     arcpy.analysis.Intersect(
-        in_features=f"{input} #;mgp #",
-        out_feature_class=f"amenagement_cyclable_{date}_mgp",
+        in_features=f"{input} #;{zone} #",
+        out_feature_class=f"amenagement_cyclable_{date}_{zone}",
         join_attributes="ALL",
         cluster_tolerance=None,
         output_type="INPUT")
 
+    # Statistiques des données
     arcpy.analysis.Statistics(
-        in_table=f"amenagement_cyclable_{date}_mgp",
-        out_table="stats_mgp",
+        in_table=f"amenagement_cyclable_{date}_{zone}",
+        out_table=f"stats_{zone}",
         statistics_fields="shape_Length SUM",
         case_field="l_epci;c_acniv1",
         concatenation_separator="")
     
+    # Pivot de la tables
     arcpy.management.PivotTable(
-        in_table="stats_mgp",
+        in_table=f"stats_{zone}",
         fields="l_epci",
         pivot_field="c_acniv1",
         value_field="SUM_shape_Length",
-        out_table="stats_mgp_pivot")
+        out_table=f"stats_{zone}_pivot")
     
-    arcpy.management.CalculateField("stats_mgp_pivot", "voies_vertes", "(!F20!*2)/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "pistes_cyclables", "((!F11!*2)+!F10!)/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "amenagemens_cyclables_secu", "!voies_vertes!+!pistes_cyclables!", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "bandes_cyclables", "((!F12!*2)+!F13!)/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "double_sens_cyclable", "!F16!/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "voie_bus_cyclables", "(!F14!+!F17!+(2*!F18!))/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "amenagements_cyclables_partag", "!bandes_cyclables!+!double_sens_cyclable!+!voie_bus_cyclables!", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_mgp_pivot", "total_amenagements_exi", "!amenagements_cyclables_partag!+!amenagemens_cyclables_secu!", "PYTHON3", "", "DOUBLE")
-
-    arcpy.AddMessage("Statistique cyclable epci...")
-
-    arcpy.analysis.Intersect(
-        in_features=f"{input} #;epci #",
-        out_feature_class=f"amenagement_cyclable_{date}_epci",
-        join_attributes="ALL",
-        cluster_tolerance=None,
-        output_type="INPUT")
-
-    arcpy.analysis.Statistics(
-        in_table=f"amenagement_cyclable_{date}_epci",
-        out_table="stats_epci",
-        statistics_fields="shape_Length SUM",
-        case_field="l_epci;c_acniv1",
-        concatenation_separator="")
-    
-    arcpy.management.PivotTable(
-        in_table="stats_epci",
-        fields="l_epci",
-        pivot_field="c_acniv1",
-        value_field="SUM_shape_Length",
-        out_table="stats_epci_pivot")
-
-    table = "stats_epci_pivot"
+    # Remplacement des nulls par 0
+    table = f"stats_{zone}_pivot"
     prefixe = "F"  # Champs commençant par
     remplacer_null(table,prefixe)
 
-    arcpy.management.CalculateField("stats_epci_pivot", "voies_vertes", "(!F20!*2)/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "pistes_cyclables", "((!F11!*2)+!F10!)/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "amenagemens_cyclables_secu", "!voies_vertes!+!pistes_cyclables!", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "bandes_cyclables", "((!F12!*2)+!F13!)/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "double_sens_cyclable", "!F16!/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "voie_bus_cyclables", "(!F14!+!F17!+(2*!F18!))/1000", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "amenagements_cyclables_partag", "!bandes_cyclables!+!double_sens_cyclable!+!voie_bus_cyclables!", "PYTHON3", "", "DOUBLE")
-    arcpy.management.CalculateField("stats_epci_pivot", "total_amenagements_exi", "!amenagements_cyclables_partag!+!amenagemens_cyclables_secu!", "PYTHON3", "", "DOUBLE")
+    # Règle de calcul des amènagements cyclables
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "voies_vertes", "(!F20!*2)/1000", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "pistes_cyclables", "((!F11!*2)+!F10!)/1000", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "amenagemens_cyclables_secu", "!voies_vertes!+!pistes_cyclables!", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "bandes_cyclables", "((!F12!*2)+!F13!)/1000", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "double_sens_cyclable_cal", "!F16!/1000", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "voie_bus_cyclables", "(!F14!+!F17!+(2*!F18!))/1000", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "amenagements_cyclables_partag", "!bandes_cyclables!+!double_sens_cyclable_cal!+!voie_bus_cyclables!", "PYTHON3", "", "DOUBLE")
+    arcpy.management.CalculateField(f"stats_{zone}_pivot", "total_amenagements_exi", "!amenagements_cyclables_partag!+!amenagemens_cyclables_secu!", "PYTHON3", "", "DOUBLE")
 
-###---------------------------------------------------------------------------------------------------------------------------------------------###
-arcpy.env.workspace = chemin_gdb
+    # Renommer les champs selon les codes de description des niveaux
+    renommer_champs_amenagements(f"stats_{zone}_pivot")
 
-activation_creation_workspace = False
-activation_import_geojson = False
-activation_projection_decoupage_couche = False
+    arcpy.AddMessage(f"Statistique cyclable sur la {zone} terminée...\n")
+
+# --------------------------------------------------------------------------------------------------------
+# 🔁 - MAIN
+# --------------------------------------------------------------------------------------------------------
+arcpy.env.workspace = chemin_gdb # Chemin du workspace
+
+# 🔹 Activation / désactivation des fonctions et des traitements ⚠️ A regarder avant de lancer le script ⚠️
+activation_creation_workspace = True
+activation_import_geojson = True
+activation_projection_decoupage_couche = True
 activation_orgnisation_champs = True
 activation_categorisation_cyclable_c_acniv1_2 = True
 activation_stats_cyclable_mgp_epci = True
 
-
-# Création d'une *.gdb et import des données
+# 🔹 Création d'une *.gdb et import des données
 if activation_creation_workspace:
-    
     creation_workspace(chemin_dossier, nom_dossier, nom_gdb, liste_nom_couche, liste_chemin_couche)
 
-
-# Import des nouvelles données cyclables en geojson
+# 🔹 Import des nouvelles données cyclables en geojson
 if activation_import_geojson:
-
     import_geojson(lien, chemin_dossier_gdb, chemin_gdb, date)
 
-
-# Projection et découpage sur IDF des nouvelles données cyclables
+# 🔹 Projection et découpage sur IDF des nouvelles données cyclables
 if activation_projection_decoupage_couche:
-
     input = f"am_cyclable_BNAC_{date}"
-    projection_decoupage_couche(input,epci,date)
+    projection_decoupage_couche(input, epci, date)
 
-
-# Réorganisation des champs
+# 🔹 Réorganisation des champs
 if activation_orgnisation_champs:
-
     input = f"amenagement_cyclable_{date}"
     orgnisation_champs(input)
 
-
-# Catégorisation des nouvelles données cyclables à partir des champs ame_d, ame_g, sens_d et sens_g
+# 🔹 Catégorisation des nouvelles données cyclables à partir des champs ame_d, ame_g, sens_d et sens_g
 if activation_categorisation_cyclable_c_acniv1_2:
-
     input = f"amenagement_cyclable"
     categorisation_cyclable_c_acniv1_2(input)
 
-
-# Calcul statistique sur les nouvelles données cyclables
+# 🔹 Calcul statistique sur les nouvelles données cyclables
 if activation_stats_cyclable_mgp_epci:
-
     input = "amenagement_cyclable"
-    stats_cyclable_mgp_epci(input,date)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-# codeblock = """
-# def updateField(ad, ag, nv):
-
-#     # Gestion des cas prioritaires liés à nv
-#     if nv == "z30":
-#         return 16
-#     elif nv in ("z20", "rue pietonne"):
-#         return 19
-
-#     # Clé qui ne dépend pas de ad/ag
-#     key = frozenset([ad, ag])
-
-#     rules = {
-#         # ---- Niveau 10 ---- Piste cyclable unirectionnelle
-#         frozenset([AUCUN, "PISTE CYCLABLE"]): 10,
-#         frozenset(["PISTE CYCLABLE", "DOUBLE SENS CYCLABLE NON MATERIALISE"]): 10,
-#         frozenset(["PISTE CYCLABLE", "AUTRE"]): 10,
-#         frozenset(["AUTRE", "DOUBLE SENS CYCLABLE PISTE"]): 10,
-#         frozenset([AUCUN, "DOUBLE SENS CYCLABLE PISTE"]): 10,
-
-#         # ---- Niveau 11 ---- Piste cyclable bidirectionnelle
-#         frozenset(["PISTE CYCLABLE", "PISTE CYCLABLE"]): 11,
-#         frozenset([AUCUN, "DOUBLE SENS CYCLABLE PISTE"]): 11,
-#         frozenset(["BANDE CYCLABLE", "PISTE CYCLABLE"]): 11,
-#         frozenset(["BANDE CYCLABLE", "DOUBLE SENS CYCLABLE PISTE"]): 11,
-#         frozenset(["PISTE CYCLABLE", "DOUBLE SENS CYCLABLE BANDE"]): 11,
-#         frozenset(["PISTE CYCLABLE", "DOUBLE SENS CYCLABLE PISTE"]): 11,
-#         frozenset(["PISTE CYCLABLE", "PISTE CYCLABLE"]): 11,
-
-#         # ---- Niveau 12 ---- Bande cyclable bidirectionnelle
-#         frozenset(["BANDE CYCLABLE", "DOUBLE SENS CYCLABLE BANDE"]): 12,
-#         frozenset([AUCUN, "BANDE CYCLABLE"]): 12,
-#         frozenset(["DOUBLE SENS CYCLABLE NON MATERIALISE", "BANDE CYCLABLE"]): 12,
-#         frozenset(["CHAUSSEE A VOIE CENTRALE BANALISEE"]): 12,
-#         frozenset(["BANDE CYCLABLE", "DOUBLE SENS CYCLABLE PISTE"]): 12,
-
-#         # ---- Niveau 13 ---- Bande cyclable unidirectionnelle
-#         frozenset([AUCUN, "BANDE CYCLABLE"]): 13,
-#         frozenset([AUCUN, "DOUBLE SENS CYCLABLE BANDE"]): 13,
-#         frozenset(["BANDE CYCLABLE", "DOUBLE SENS CYCLABLE NON MATERIALISE"]): 13,
-#         frozenset(["BANDE CYCLABLE", "AUTRE"]): 13,
-#         frozenset(["DOUBLE SENS CYCLABLE BANDE", "AUTRE"]): 13,
-#         frozenset(["BANDE CYCLABLE", "BANDE CYCLABLE"]): 13,
-
-#         # ---- Niveau 14 ---- Bande cyclable et voie de bus partagée
-#         frozenset(["COULOIR BUS+VELO", "BANDE CYCLABLE"]): 14,
-#         frozenset(["COULOIR BUS+VELO", "PISTE CYCLABLE"]): 14,
-#         frozenset(["COULOIR BUS+VELO", "DOUBLE SENS CYCLABLE BANDE"]): 14,
-#         frozenset(["COULOIR BUS+VELO", "DOUBLE SENS CYCLABLE PISTE"]): 14,
-
-#         # ---- Niveau 15 ---- 	Double sens cyclable et voie de bus partagée
-
-#         # ---- Niveau 16 ---- Double sens cyclable
-#         frozenset([AUCUN, "DOUBLE SENS CYCLABLE NON MATERIALISE"]): 16,
-#         frozenset(["DOUBLE SENS CYCLABLE PISTE", "DOUBLE SENS CYCLABLE NON MATERIALISE"]): 16,
-#         frozenset(["DOUBLE SENS CYCLABLE BANDE", "DOUBLE SENS CYCLABLE NON MATERIALISE"]): 16,
-
-#         # ---- Niveau 17 ---- Voie de bus partagée unidirectionnelle
-#         frozenset([AUCUN, "COULOIR BUS+VELO"]): 17,
-#         frozenset(["DOUBLE SENS CYCLABLE NON MATERIALISE", "COULOIR BUS+VELO"]): 17,
-#         frozenset(["COULOIR BUS+VELO", "AUTRE"]): 17,
-
-#         # ---- Niveau 18 ---- Voie de bus partagée bidirectionnelle
-#         frozenset(["COULOIR BUS+VELO"]): 18,
-
-#         # ---- Niveau 19 ---- Autre aménagement cyclable partagé
-#         frozenset(["AMENAGEMENT MIXTE PIETON VELO HORS VOIE VERTE"]): 19,
-#         frozenset(["AUTRE"]): 19,
-
-#         # ---- Niveau 20 ---- Voie verte
-#         frozenset(["VOIE VERTE"]): 20,
-#     }
-
-#     return rules.get(key, None)
-# """
-
-# arcpy.CalculateField_management(bddCyclableMajTemp,"c_acniv1","updateField(!ad!, !ag!, !nv!)","PYTHON3",codeblock)
+    liste_zone = ['epci', 'mgp']
+    for zone in liste_zone :
+        stats_cyclable_mgp_epci(input, date, chemin_gdb, zone)

@@ -100,6 +100,6 @@ def stats_cyclable_mgp_epci_dyn(input_table, chemin):
         calc_stats_pivot_dyn(out_fc, pivot_field, case_field, out_pivot)
 
 # ---- Exécution ----
-chemin = r"P:\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires\MAJ_AMENAGEMENT_CYCLABLE_07_25\MAJ_AMENAGEMENT_CYCLABLE_07_25.gdb"
+chemin = r"P:\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires\MAJ_AMENAGEMENT_CYCLABLE_10_25\MAJ_AMENAGEMENT_CYCLABLE_10_25.gdb"
 input_table = "amenagement_cyclable_2025"
 stats_cyclable_mgp_epci_dyn(input_table, chemin)

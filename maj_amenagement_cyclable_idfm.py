@@ -9,29 +9,37 @@ import requests,zipfile
 from io import BytesIO
 
 # Ce script permet de mettre à jour la base de données cyclable IDF provenant de Iles-de-France Mobilités...
+# Le lien vers les données IDFM: https://data.iledefrance-mobilites.fr/explore/dataset/amenagements-velo-en-ile-de-france/information/
+# Récupere le lien GeoJSON sur la page ici: https://data.iledefrance-mobilites.fr/explore/dataset/amenagements-velo-en-ile-de-france/export/
 
-# Nom et chemin du dossier et de la nouvelle *.gdb :
+# --------------------------------------------------------------------------------------------------------
+# 🔧 0 -  PARAMETRES ET LIENS
+# --------------------------------------------------------------------------------------------------------
+# 🔹 Date de la mise à jour format AAAA_MM_JJ
+date = "2025_12_01"
+
+# 🔹 Nom et chemin du dossier et de la nouvelle *.gdb :
 chemin_dossier = r'\\zsfa\ZSF-APUR\SIG\12_BDPPC\BDPPCDIF\Publications_temporaires'
-nom_dossier = 'MAJ_AMENAGEMENT_CYCLABLE_07_25' # Nom du dossier
-nom_gdb = "MAJ_AMENAGEMENT_CYCLABLE_07_25.gdb" # Nom de la *.gdb
+nom_dossier = f"MAJ_AMENAGEMENT_CYCLABLE_IDFM_{date}" # Nom du dossier
+nom_gdb = f"MAJ_AMENAGEMENT_CYCLABLE_IDFM_{date}.gdb" # Nom de la *.gdb
 
-# Lien url provenant d'IDFM
+# 🔹 Lien url provenant d'IDFM en format JSON
 lien = "https://data.iledefrance-mobilites.fr/api/explore/v2.1/catalog/datasets/amenagements-velo-en-ile-de-france/exports/geojson?lang=fr&timezone=Europe%2FBerlin"
 
-date = 2025 # date de mise à jour de la bdd
-
-# Noms des variables :
+# 🔹 Noms des variables :
 pisteCyclable = "amenagement_cyclable"
 commune = "commmune"
 
 liste_nom_shp = [pisteCyclable,commune]
 
-# Localisation des shapefiles d'entrees :
+# 🔹 Localisation des shapefiles d'entrees :
 liste_chemins_shp = [r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\diffusion.sde\apur.diffusion.cyclable\apur.diffusion.amenagement_cyclable',
 r'\\zsfa\sig$\12_BDPPC\maj_pc\script\connexions_sde\diffusion.sde\apur.diffusion.limite_administrative\apur.diffusion.commune']
 
-
-### CREATION D'UNE GDB ET IMPORT DES DONNEES ###
+# --------------------------------------------------------------------------------------------------------
+# 🔧 1 -  FONCTIONS DE TRAITEMENTS
+# --------------------------------------------------------------------------------------------------------
+# 🔹 Fonction créant un dossier et une *.gdb ou les données sont importées
 def creation_workspace(chemin_dossier,nom_dossier,nom_gdb,liste_nom_shp,liste_chemins_shp):
     arcpy.env.overwriteOutput = True
     arcpy.AddMessage("Creation d'un dossier...")
@@ -49,14 +57,7 @@ def creation_workspace(chemin_dossier,nom_dossier,nom_gdb,liste_nom_shp,liste_ch
 
     arcpy.AddMessage("Fin de copie des donnees dans la nouvelle *.gdb...")
 
-# creation_workspace(chemin_dossier,nom_dossier,nom_gdb,liste_nom_shp,liste_chemins_shp)
-
-chemin = arcpy.env.workspace = chemin_dossier + "\\" + nom_dossier + "\\" + nom_gdb # Localisation du workspace
-chemin1 = arcpy.env.workspace = chemin_dossier + "\\" + nom_dossier 
-arcpy.env.overwriteOutput = True # Attention permet d'écraser fichier du même nom
-
-
-### TRAITEMENT ET MAJ DE LA BDD CYCLABLE ###
+# 🔹 Fonction de traitements des données IDFM
 def maj_amenagement_cyclable(lien,chemin1,chemin,date):
 
     arcpy.AddMessage("Lancement de la mise à jour de la base de données cyclable...")
@@ -79,7 +80,7 @@ def maj_amenagement_cyclable(lien,chemin1,chemin,date):
     print(geojson_path)
     print(out_features)
     
-    arcpy.conversion.JSONToFeatures(in_json_file=geojson_path,out_features=out_features,geometry_type="POLYLINE")
+    arcpy.conversion.JSONToFeatures(geojson_path, out_features, "POLYLINE")
 
     arcpy.env.workspace = chemin
     listeBbddCyclable = arcpy.ListFeatureClasses()
@@ -542,10 +543,7 @@ def updateField(c_acniv1):
 
     arcpy.AddMessage("Mise à jour de la base de données cyclable terminée dans amenagement_cyclable_{}...".format(date))
 
-# maj_amenagement_cyclable(lien,chemin1,chemin,date)
-
-
-### LISTER LES VALEURS D'UN CHAMP ET VOIR LES DIFFERENCES ###
+# 🔹 Fonction de comparaison des nouvelle et ancienne
 def comparaison_bdd(VieilleBddCyclable,bddCyclableMaj):
 
     arcpy.AddMessage("Comparaison des donnees...")
@@ -599,12 +597,8 @@ def comparaison_bdd(VieilleBddCyclable,bddCyclableMaj):
     diff_table = list(set(ag_2022) - set(ag))
     print("Differences entre les deux tables odl/new",diff_table)
 
-VieilleBddCyclable = "amenagement_cyclable"
-bddCyclableMaj = "amenagement_cyclable_{}".format(date)
-# comparaison_bdd(VieilleBddCyclable,bddCyclableMaj)
-
-
-def stats_cyclable_mgp_epci(input):
+# 🔹 Fonction de calcul des statistiques métriques des amènagements cyclables
+def stats_cyclable_mgp_epci(input, chemin):
 
     arcpy.AddMessage("Import couche mgp, epci et accès vélo...")
     
@@ -685,12 +679,12 @@ def Reclass(val):
         in_table="amenagement_cyclable_2025_mgp",
         out_table="stats_mgp",
         statistics_fields="shape_Length SUM",
-        case_field="lib;c_acniv1",
+        case_field="l_epci;c_acniv1",
         concatenation_separator="")
     
     arcpy.management.PivotTable(
         in_table="stats_mgp",
-        fields="lib",
+        fields="l_epci",
         pivot_field="c_acniv1",
         value_field="SUM_shape_Length",
         out_table="stats_mgp_pivot")
@@ -740,26 +734,33 @@ def Reclass(val):
     arcpy.management.CalculateField("stats_epci_pivot", "amenagements_cyclables_partag", "!bandes_cyclables!+!double_sens_cyclable!+!voie_bus_cyclables!", "PYTHON3", "", "DOUBLE")
     arcpy.management.CalculateField("stats_epci_pivot", "total_amenagements_exi", "!amenagements_cyclables_partag!+!amenagemens_cyclables_secu!", "PYTHON3", "", "DOUBLE")
 
-input = "amenagement_cyclable_{}".format(date)
-stats_cyclable_mgp_epci(input)
+# --------------------------------------------------------------------------------------------------------
+# 🔁 - MAIN
+# --------------------------------------------------------------------------------------------------------
+# 🔹 Activation / désactivation des fonctions et des traitements ⚠️ A regarder avant de lancer le script ⚠️
+activation_creation_workspace = True
+activation_maj_amenagement_cyclable = True
+activation_comparaison_bdd = True
+activation_stats_cyclable_mgp_epci = True
 
+# 🔹 Création d'une *.gdb et import des données
+if activation_creation_workspace:
+    creation_workspace(chemin_dossier, nom_dossier, nom_gdb,liste_nom_shp, liste_chemins_shp)
 
-### MAJ DE LA BDD CYCLABLE DANS DIFFUSION ###
-def maj_bdd_diffusion(sde_diffusion,chemin):
-    arcpy.AddMessage("Mise à jour de amenagement_cyclable dans diffusion...")
-    arcpy.env.workspace = chemin
+chemin = arcpy.env.workspace = chemin_dossier + "\\" + nom_dossier + "\\" + nom_gdb # Localisation du workspace
+chemin1 = arcpy.env.workspace = chemin_dossier + "\\" + nom_dossier 
+arcpy.env.overwriteOutput = True # Attention permet d'écraser fichier du même nom
+
+# 🔹 Traitement et maj des données cyclables
+if activation_maj_amenagement_cyclable:
+    maj_amenagement_cyclable(lien, chemin1, chemin, date)
+
+# 🔹 Lister les valeurs d'un champ et voir les diffèrences
+if activation_comparaison_bdd:
+    VieilleBddCyclable = "amenagement_cyclable"
     bddCyclableMaj = "amenagement_cyclable_{}".format(date)
-    bddCyclableDiffusionChemin = sde_diffusion + '/apur.diffusion.cyclable'
-    bddCyclableDiffusion = sde_diffusion + '/apur.diffusion.cyclable/apur.diffusion.amenagement_cyclable'
-    
-    arcpy.UnregisterAsVersioned_management(bddCyclableDiffusionChemin,"NO_KEEP_EDIT","COMPRESS_DEFAULT")
-    arcpy.AddMessage("Tronquer la table...")
-    arcpy.TruncateTable_management(bddCyclableDiffusion)
-    arcpy.AddMessage("Charger la table avec les nouvelles données...")
-    arcpy.Append_management(bddCyclableMaj, bddCyclableDiffusion, "NO_TEST")
-    arcpy.AddMessage("Versioner la table...")
-    arcpy.RegisterAsVersioned_management(bddCyclableDiffusionChemin, "NO_EDITS_TO_BASE")
+    comparaison_bdd(VieilleBddCyclable,bddCyclableMaj)
 
-sde_diffusion = r'//zsfa/ZSF-APUR/SIG/12_BDPPC/maj_pc/script/connexions_sde/diffusion.sde'
-# maj_bdd_diffusion(sde_diffusion,chemin)
-
+# 🔹 Calcul statistique sur les nouvelles données cyclables
+input = "amenagement_cyclable_{}".format(date)
+stats_cyclable_mgp_epci(input, chemin)
