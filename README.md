@@ -1,4 +1,4 @@
-Ce projet contient deux script python :
+Ce projet contient deux scripts python :
 1) maj_amenagement_cyclable_bnac.py
 2) maj_amenagement_cyclable_idfm.py
 
